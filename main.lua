@@ -11,11 +11,17 @@ TILE_SIZE = 64
 PADDING = 2
 
 TILE_NONE = 0
-TILE_BALL = 1
-TILE_WALL = 2
+TILE_WALL = 1
+TILE_BALL_1 = 2
+TILE_BALL_2 = 3
 
 tiles = {}
-grid = { balls = {{3, 2}, {3, 4}, {5, 4}}, walls = {{2, 2}, {2, 5}, {7, 2}, {7, 5}} }
+grid = {
+  balls_1 = {{3, 2}, {5, 4}},
+  balls_2 = {{5, 2}, {3, 4}},
+  walls = {{2, 2}, {2, 5}, {7, 2}, {7, 5}} }
+
+key_move = { s = MOVE_SOUTH, w = MOVE_NORTH, a = MOVE_WEST, d = MOVE_EAST }
 
 function makeTile(x, y, type)
   tiles[y][x] = { type = type, x = x, y = y, tx = x, ty = y }
@@ -31,9 +37,12 @@ function love.load()
     end
   end
 
-  for _, i in ipairs(grid.balls) do
-    print(i[0])
-    makeTile(i[1], i[2], TILE_BALL)
+  for _, i in ipairs(grid.balls_1) do
+    makeTile(i[1], i[2], TILE_BALL_1)
+  end
+
+  for _, i in ipairs(grid.balls_2) do
+    makeTile(i[1], i[2], TILE_BALL_2)
   end
 
   for _, i in ipairs(grid.walls) do
@@ -54,7 +63,7 @@ function love.update(dt)
     for i = 1, HEIGHT do
       for j = 1, WIDTH do
         t = tiles [i][j]
-        if t.type == TILE_BALL then
+        if t.type > TILE_WALL then
           if moving == MOVE_SOUTH then
             t.y = t.y + dt * 9
             if t.y > t.ty then
@@ -103,7 +112,6 @@ function love.update(dt)
           t = tiles[i][j]
           if t.type ~= TILE_NONE then
             ntiles[t.y][t.x] = t
-            print ("in: " ..t.x .. ":" .. t.y .. " -> " .. t.x .. ":" .. t.y)
           end
         end
       end
@@ -113,73 +121,74 @@ function love.update(dt)
   end
 end
 
-function love.keypressed(key, scancode, isrepeat)
-  if moving == MOVE_NONE then
-    if key == 's' then
-      moving = MOVE_SOUTH
-      for j = 1, WIDTH do
-        bottom = 0
-        for i = HEIGHT, 1, -1 do
-          t = tiles[i][j]
-          if bottom == 0 and t.type == TILE_NONE then
-            bottom = i
-          elseif bottom > 0 and t.type == TILE_BALL then
-            t.ty = bottom
-            bottom = bottom - 1
-          elseif t.type == TILE_WALL then
-            bottom = 0
-          end
-        end
-      end
-    elseif key == 'w' then
-      moving = MOVE_NORTH
-      for j = 1, WIDTH do
-        top = 0
-        for i = 1, HEIGHT do
-          t = tiles[i][j]
-          if top == 0 and t.type == TILE_NONE then
-            top = i
-          elseif top > 0 and t.type == TILE_BALL then
-            t.ty = top
-            top = top + 1
-          elseif t.type == TILE_WALL then
-            top = 0
-          end
-        end
-      end
-    elseif key == 'a' then
-      moving = MOVE_WEST
-      for i = 1, HEIGHT do
-        left = 0
-        for j = 1, WIDTH do
-          t = tiles[i][j]
-          if left == 0 and t.type == TILE_NONE then
-            left = j
-          elseif left > 0 and t.type == TILE_BALL then
-            t.tx = left
-            left = left + 1
-          elseif t.type == TILE_WALL then
-            left = 0
-          end
-        end
-      end
-    elseif key == 'd' then
-      moving = MOVE_EAST
-      for i = 1, HEIGHT do
-        right = 0
-        for j = WIDTH, 1, -1 do
-          t = tiles[i][j]
-          if right == 0 and t.type == TILE_NONE then
-            right = j
-          elseif right > 0 and t.type == TILE_BALL then
-            t.tx = right
-            right = right - 1
-          elseif t.type == TILE_WALL then
-            right = 0
-          end
+function moveall(direction)
+  if direction == MOVE_SOUTH then
+    for j = 1, WIDTH do
+      target = 0
+      for i = HEIGHT, 1, -1 do
+        t = tiles[i][j]
+        if target == 0 and t.type == TILE_NONE then
+          target = i
+        elseif target > 0 and t.type > TILE_WALL then
+          t.ty = target
+          target = target - 1
+        elseif t.type == TILE_WALL then
+          target = 0
         end
       end
     end
+  elseif direction == MOVE_NORTH then
+    for j = 1, WIDTH do
+      target = 0
+      for i = 1, HEIGHT do
+        t = tiles[i][j]
+        if target == 0 and t.type == TILE_NONE then
+          target = i
+        elseif target > 0 and t.type > TILE_WALL then
+          t.ty = target
+          target = target + 1
+        elseif t.type == TILE_WALL then
+          target = 0
+        end
+      end
+    end
+  elseif direction == MOVE_WEST then
+    for i = 1, HEIGHT do
+      left = 0
+      for j = 1, WIDTH do
+        t = tiles[i][j]
+        if left == 0 and t.type == TILE_NONE then
+          left = j
+        elseif left > 0 and t.type > TILE_WALL then
+          t.tx = left
+          left = left + 1
+        elseif t.type == TILE_WALL then
+          left = 0
+        end
+      end
+    end
+  elseif direction == MOVE_EAST then
+    for i = 1, HEIGHT do
+      right = 0
+      for j = WIDTH, 1, -1 do
+        t = tiles[i][j]
+        if right == 0 and t.type == TILE_NONE then
+          right = j
+        elseif right > 0 and t.type > TILE_WALL then
+          t.tx = right
+          right = right - 1
+        elseif t.type == TILE_WALL then
+          right = 0
+        end
+      end
+    end
+  end
+end
+
+function love.keypressed(key, scancode, isrepeat)
+  if moving == MOVE_NONE then
+    moving = key_move[key] or MOVE_NONE
+    moveall(moving)
   end
 end
 
@@ -188,8 +197,10 @@ function love.draw()
   for i = 1, HEIGHT do
     for j = 1, WIDTH do
       t = tiles[i][j]
-      if t.type == TILE_BALL then
+      if t.type == TILE_BALL_1 then
         love.graphics.circle("fill", t.x * TILE_SIZE - TILE_SIZE / 2 + PADDING, t.y * TILE_SIZE - TILE_SIZE / 2 + PADDING, TILE_SIZE / 2)
+      elseif t.type == TILE_BALL_2 then
+        love.graphics.circle("line", t.x * TILE_SIZE - TILE_SIZE / 2 + PADDING, t.y * TILE_SIZE - TILE_SIZE / 2 + PADDING, TILE_SIZE / 2)
       elseif t.type == TILE_WALL then
         love.graphics.rectangle("fill", t.x * TILE_SIZE - TILE_SIZE + PADDING, t.y * TILE_SIZE - TILE_SIZE + PADDING, TILE_SIZE, TILE_SIZE)
       end
